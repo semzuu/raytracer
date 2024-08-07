@@ -17,40 +17,44 @@ const ImageWidth = 640;
 const ImageHeight = int(ImageWidth/AspectRatio);
 const ViewportHeight float64 = 2;
 const ViewportWidth = ViewportHeight*AspectRatio;
-const FocalLength = 1;
+const FocalLength = 3;
 
-func rayColor(ray Ray) Color {
-    var color Color;
-    center := Vec3{0, 0, 1};
-    t, ok := hitSphere(ray, center, 0.5);
-    if ok {
-        normal := ray.At(t).Sub(center).Normalize().Add(Vec3{1, 1, 1}).Scale(0.5);
-        color = Color{0.7, 0, 0.2};
-        color = normal;
-    } else {
+func rayColor(ray Ray, objects []Object) Color {
+    minScalar := math.MaxFloat64;
+    index := -1;
+    for i, object := range objects {
+        t, ok := object.Hit(ray);
+        if ok && t <= minScalar {
+            minScalar = t;
+            index = i;
+        }
+    }
+    if index == -1 {
         col := 0x18/255.0;
-        color = Color{col, col, col};
+        return Color{col, col, col};
+    } else {
+        normal := ray.At(minScalar).Sub(objects[index].Center()).Normalize();
+        return normal.Add(Vec3{1, 1, 1}).Scale(0.5);
     }
-    return color;
-}
-
-func hitSphere(ray Ray, center Point3, radius float64) (float64, bool) {
-    temp := center.Sub(ray.Origin);
-    a := ray.Direction.Dot(ray.Direction);
-    b := -2 * ray.Direction.Dot(temp);
-    c := temp.Dot(temp) - radius*radius;
-
-    delta := b*b - 4*a*c;
-    if delta < 0 {
-        return 0, false;
-    }
-    return (-b-math.Sqrt(delta))/2*a, true;
 }
 
 func main() {
-    output := image.NewNRGBA(image.Rect(0, 0, ImageWidth, ImageHeight))
+    output := image.NewNRGBA(image.Rect(0, 0, ImageWidth, ImageHeight));
+    var objects []Object;
+    objects = append(objects, NewSphere(
+        Vec3{-1, 0, 2},
+        0.5,
+    ));
+    objects = append(objects, NewSphere(
+        Vec3{0, -100, 50},
+        100,
+    ));
+    objects = append(objects, NewSphere(
+        Vec3{1, 1, 2},
+        1,
+    ));
 
-    cameraCenter := Point3{0, 0, 0};
+    cameraCenter := Point3{0, 0, -FocalLength};
     Vu, Vv := Vec3{ViewportWidth, 0, 0}, Vec3{0, -ViewportHeight, 0};
     Du, Dv := Vu.Scale(1/float64(ImageWidth)), Vv.Scale(1/float64(ImageHeight));
     viewportUpperLeft := cameraCenter.Add(Vec3{ViewportWidth*-0.5, ViewportHeight*0.5, FocalLength});
@@ -65,7 +69,7 @@ func main() {
                 pixelCenter.Sub(cameraCenter),
             };
 
-            color := rayColor(ray).Scale(255);
+            color := rayColor(ray, objects).Scale(255);
             base := (y-output.Rect.Min.Y)*output.Stride + (x-output.Rect.Min.X)*4;
             output.Pix[base]     = uint8(color.X);
             output.Pix[base + 1] = uint8(color.Y);
@@ -73,7 +77,7 @@ func main() {
             output.Pix[base + 3] = 255;
         }
     }
-    filepath := "output/normals-circle.png";
+    filepath := "output/multiple-circles.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);
