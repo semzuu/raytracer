@@ -5,6 +5,7 @@ import (
 	"image/png"
 	"io"
 	"log"
+	"math"
 	"os"
 	. "raytracer/geometry"
 );
@@ -21,8 +22,11 @@ const FocalLength = 1;
 func rayColor(ray Ray) Color {
     var color Color;
     center := Vec3{0, 0, 1};
-    if hitSphere(ray, center, 0.5) {
+    t, ok := hitSphere(ray, center, 0.5);
+    if ok {
+        normal := ray.At(t).Sub(center).Normalize().Add(Vec3{1, 1, 1}).Scale(0.5);
         color = Color{0.7, 0, 0.2};
+        color = normal;
     } else {
         col := 0x18/255.0;
         color = Color{col, col, col};
@@ -30,14 +34,17 @@ func rayColor(ray Ray) Color {
     return color;
 }
 
-func hitSphere(ray Ray, center Point3, radius float64) bool {
+func hitSphere(ray Ray, center Point3, radius float64) (float64, bool) {
     temp := center.Sub(ray.Origin);
     a := ray.Direction.Dot(ray.Direction);
     b := -2 * ray.Direction.Dot(temp);
     c := temp.Dot(temp) - radius*radius;
 
     delta := b*b - 4*a*c;
-    return delta >= 0;
+    if delta < 0 {
+        return 0, false;
+    }
+    return (-b-math.Sqrt(delta))/2*a, true;
 }
 
 func main() {
@@ -66,7 +73,7 @@ func main() {
             output.Pix[base + 3] = 255;
         }
     }
-    filepath := "output/circle.png";
+    filepath := "output/normals-circle.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);
