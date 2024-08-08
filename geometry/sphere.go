@@ -5,12 +5,14 @@ import "math";
 type Sphere struct{
     center Point3;
     radius float64;
+    color Vec3;
 };
 
-func NewSphere(center Point3, radius float64) Sphere {
+func NewSphere(center Point3, radius float64, color Vec3) Sphere {
     return Sphere{
         center,
         radius,
+        color,
     };
 }
 
@@ -20,6 +22,10 @@ func (self Sphere) Center() Point3 {
 
 func (self Sphere) Radius() float64 {
     return self.radius;
+}
+
+func (self Sphere) Color() Vec3 {
+    return self.color;
 }
 
 func (self Sphere) Hit(ray Ray) (float64, bool) {

@@ -18,23 +18,35 @@ const ImageHeight = int(ImageWidth/AspectRatio);
 const ViewportHeight float64 = 2;
 const ViewportWidth = ViewportHeight*AspectRatio;
 const FocalLength = 3;
+var LightSource = NewSphere(Vec3{-2, 1, 2}, 0.1, Color{1, 1, 1});
 
 func rayColor(ray Ray, objects []Object) Color {
     minScalar := math.MaxFloat64;
     index := -1;
     for i, object := range objects {
         t, ok := object.Hit(ray);
-        if ok && t <= minScalar {
+        if ok && t >= 0 && t <= minScalar {
             minScalar = t;
             index = i;
         }
     }
     if index == -1 {
-        col := 0x18/255.0;
+        _, ok := LightSource.Hit(ray);
+        if ok {
+            return LightSource.Color();
+        }
+        col := 0x50/255.0;
         return Color{col, col, col};
     } else {
-        normal := ray.At(minScalar).Sub(objects[index].Center()).Normalize();
-        return normal.Add(Vec3{1, 1, 1}).Scale(0.5);
+        point := ray.At(minScalar)
+        normal := point.Sub(objects[index].Center()).Normalize();
+        light := LightSource.Center().Sub(point).Add(point).Normalize();
+        sim := light.Dot(normal);
+        if sim <= 0 {
+            mult := (sim+1)*0.5;
+            return objects[index].Color().Scale(mult);
+        }
+        return objects[index].Color();
     }
 }
 
@@ -42,16 +54,19 @@ func main() {
     output := image.NewNRGBA(image.Rect(0, 0, ImageWidth, ImageHeight));
     var objects []Object;
     objects = append(objects, NewSphere(
-        Vec3{-1, 0, 2},
+        Vec3{-1, 0, 1},
         0.5,
+        Color{0.7, 0, 0.2},
+    ));
+    objects = append(objects, NewSphere(
+        Vec3{1, 0, 2},
+        1,
+        Color{0.1, 0, 0.9},
     ));
     objects = append(objects, NewSphere(
         Vec3{0, -100, 50},
         100,
-    ));
-    objects = append(objects, NewSphere(
-        Vec3{1, 1, 2},
-        1,
+        Color{0, 0.5, 0.2},
     ));
 
     cameraCenter := Point3{0, 0, -FocalLength};
@@ -77,7 +92,7 @@ func main() {
             output.Pix[base + 3] = 255;
         }
     }
-    filepath := "output/multiple-circles.png";
+    filepath := "output/shaded-spheres.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);
