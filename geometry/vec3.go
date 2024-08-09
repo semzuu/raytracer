@@ -8,6 +8,14 @@ type Vec3 struct{
 
 type Point3 = Vec3;
 
+func NewPoint3(x, y, z float64) Vec3 {
+    return Vec3{ x, y, z };
+}
+
+func NewVec3(x, y, z float64) Vec3 {
+    return Vec3{ x, y, z };
+}
+
 func (self Vec3) Clone() Vec3 {
     return Vec3{
         self.X,
