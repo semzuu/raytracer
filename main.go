@@ -46,7 +46,7 @@ func main() {
             output.Set(x, y, convertColor(color));
         }
     }
-    filepath := "output/proto.png";
+    filepath := "output/diffuse.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);
