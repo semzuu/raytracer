@@ -46,7 +46,7 @@ func main() {
             output.Set(x, y, convertColor(color));
         }
     }
-    filepath := "output/diffuse.png";
+    filepath := "output/anti-aliasing.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);

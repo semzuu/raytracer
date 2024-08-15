@@ -34,6 +34,7 @@ func NewCamera(center Point3, focalLength float64, ImageWidth float64, ImageHeig
     };
 }
 
+const samples = 100;
 const bounces = 200;
 var rng = rand.New(rand.NewSource(time.Now().Unix()));
 var white = NewVec3(1, 1, 1);
@@ -92,15 +93,41 @@ func (self Camera) cast(ray Ray, scene []Object, bounces int) Vec3 {
         );
         return self.cast(nray, scene, bounces-1).Scale(0.5);
     }
-    return cyan;
+
+    unit := ray.Direction.Normalize();
+    p := (unit.Y + 1) * 0.5;
+    return cyan.Scale(p).Add(white.Scale(1-p));
+}
+
+func (self Camera) getRay(u, v float64) Ray {
+    deviX, deviY := rng.Float64() - 0.5, rng.Float64() - 0.5;
+    origin := self.pixel00.Add(self.du.Scale(u+deviX)).Add(self.dv.Scale(v+deviY));
+    return NewRay(
+        origin,
+        origin.Sub(self.Center),
+    );
 }
 
 func (self Camera) Trace(u, v float64, scene []Object) Vec3 {
-    pixelCenter := self.pixel00.Add(self.du.Scale(u)).Add(self.dv.Scale(v));
-    ray := NewRay(
-        pixelCenter,
-        pixelCenter.Sub(self.Center),
+    var color Vec3;
+    for range samples {
+        ray := self.getRay(u, v);
+        color = color.Add(self.cast(ray, scene, bounces));
+    }
+    color = color.Scale(1/float64(samples));
+    return NewVec3(
+        clamp(color.X, 0, 1),
+        clamp(color.Y, 0, 1),
+        clamp(color.Z, 0, 1),
     );
+}
 
-    return self.cast(ray, scene, bounces);
+func clamp(value, min, max float64) float64 {
+    if value > max {
+        return max;
+    }
+    if value < min {
+        return min;
+    }
+    return value;
 }
