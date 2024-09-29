@@ -46,7 +46,7 @@ func main() {
             output.Set(x, y, convertColor(color));
         }
     }
-    filepath := "output/anti-aliasing.png";
+    filepath := "output/lambertian.png";
     err := pngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);

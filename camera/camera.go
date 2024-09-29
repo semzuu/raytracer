@@ -34,8 +34,10 @@ func NewCamera(center Point3, focalLength float64, ImageWidth float64, ImageHeig
     };
 }
 
-const samples = 100;
-const bounces = 200;
+const eps = 1e-9;
+var reflectance = 0.5;
+const samples = 20;
+const bounces = 100;
 var rng = rand.New(rand.NewSource(time.Now().Unix()));
 var white = NewVec3(1, 1, 1);
 var cyan = NewVec3(0.5, 0.7, 1);
@@ -62,7 +64,7 @@ func hitWorld(ray Ray, scene []Object) HitInfo {
     hit.t = math.MaxFloat64;
     for _, object := range scene {
         t, ok := object.Hit(ray);
-        if ok && t >= 0 && t <= hit.t {
+        if ok && t >= eps && t <= hit.t {
             hit.t = t;
             hit.isHit = ok;
             hit.object = &object;
@@ -76,6 +78,25 @@ func hitWorld(ray Ray, scene []Object) HitInfo {
     return hit;
 }
 
+func reflectLambertian(hit HitInfo) Ray {
+    random := randPoint().Normalize().Add(hit.normal).Add(hit.point);
+    return NewRay(
+        hit.point,
+        random,
+    );
+}
+
+func reflectRandom(hit HitInfo) Ray {
+    random := randPoint().Normalize();
+    if random.Dot(hit.normal) < 0 {
+        random.Scale(-1);
+    }
+    return NewRay(
+        hit.point,
+        random,
+    );
+}
+
 func (self Camera) cast(ray Ray, scene []Object, bounces int) Vec3 {
     if bounces <= 0 {
         return NewVec3(0, 0, 0);
@@ -83,15 +104,8 @@ func (self Camera) cast(ray Ray, scene []Object, bounces int) Vec3 {
 
     hit := hitWorld(ray, scene);
     if hit.isHit {
-        random := randPoint().Normalize();
-        if random.Dot(hit.normal) < 0 {
-            random.Scale(-1);
-        }
-        nray := NewRay(
-            hit.point,
-            random,
-        );
-        return self.cast(nray, scene, bounces-1).Scale(0.5);
+        nray := reflectLambertian(hit);
+        return self.cast(nray, scene, bounces-1).Scale(reflectance);
     }
 
     unit := ray.Direction.Normalize();
@@ -110,6 +124,7 @@ func (self Camera) getRay(u, v float64) Ray {
 
 func (self Camera) Trace(u, v float64, scene []Object) Vec3 {
     var color Vec3;
+    //reflectance = 0.2 * math.Floor(u/640/0.2) + 0.1;
     for range samples {
         ray := self.getRay(u, v);
         color = color.Add(self.cast(ray, scene, bounces));
