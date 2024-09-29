@@ -5,6 +5,7 @@ import (
 	"log"
 	. "raytracer/geometry"
     . "raytracer/camera"
+    . "raytracer/utils"
 );
 
 const AspectRatio float64 = 16/9.0;
@@ -43,11 +44,11 @@ func main() {
         log.Printf("Scanlines Remaining: %d\n", ImageHeight-y);
         for x := 0; x < ImageWidth; x++ {
             color := camera.Trace(float64(x), float64(y), scene);
-            output.Set(x, y, convertColor(color));
+            output.Set(x, y, ConvertColor(color));
         }
     }
-    filepath := "output/lambertian.png";
-    err := pngExport(filepath, output);
+    filepath := "output/gamma.png";
+    err := PngExport(filepath, output);
     if err != nil {
         log.Fatalln(err);
     }

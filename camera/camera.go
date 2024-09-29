@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/rand"
 	. "raytracer/geometry"
+    . "raytracer/utils"
 	"time"
 );
 
@@ -124,25 +125,15 @@ func (self Camera) getRay(u, v float64) Ray {
 
 func (self Camera) Trace(u, v float64, scene []Object) Vec3 {
     var color Vec3;
-    //reflectance = 0.2 * math.Floor(u/640/0.2) + 0.1;
+    reflectance = 0.2 * math.Floor(u/640/0.2) + 0.1;
     for range samples {
         ray := self.getRay(u, v);
         color = color.Add(self.cast(ray, scene, bounces));
     }
-    color = color.Scale(1/float64(samples));
+    color = GammaCorrect(color.Scale(1/float64(samples)));
     return NewVec3(
-        clamp(color.X, 0, 1),
-        clamp(color.Y, 0, 1),
-        clamp(color.Z, 0, 1),
+        Clamp(color.X, 0, 1),
+        Clamp(color.Y, 0, 1),
+        Clamp(color.Z, 0, 1),
     );
-}
-
-func clamp(value, min, max float64) float64 {
-    if value > max {
-        return max;
-    }
-    if value < min {
-        return min;
-    }
-    return value;
 }
